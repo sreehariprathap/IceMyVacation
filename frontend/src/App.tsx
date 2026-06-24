@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IntakeForm } from './components/IntakeForm'
 import { LoadingState } from './components/LoadingState'
 import { ItineraryDisplay } from './components/ItineraryDisplay'
+import { MapView } from './components/MapView'
 import { ItineraryResponse } from './lib/api'
 import './App.css'
 
@@ -47,20 +48,11 @@ function App() {
           }}
         />
       )}
-      {view === 'map' && (
-        <div className="container mx-auto p-4">
-          <p className="text-center text-muted-foreground">
-            Map view coming in Task 6.
-          </p>
-          <div className="text-center mt-4">
-            <button
-              className="text-sm underline text-muted-foreground"
-              onClick={() => setView('result')}
-            >
-              Back to itinerary
-            </button>
-          </div>
-        </div>
+      {view === 'map' && itinerary && (
+        <MapView
+          itinerary={itinerary}
+          onBack={() => setView('result')}
+        />
       )}
     </div>
   )

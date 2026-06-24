@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react'
 import { generateItinerary, ItineraryRequest, ItineraryResponse } from '@/lib/api'
 
 interface IntakeFormProps {
-  onItineraryGenerated: (data: ItineraryResponse) => void
+  onItineraryGenerated: (data: ItineraryResponse, budget?: number, budgetCurrency?: string) => void
   onSubmitting: () => void
 }
 
@@ -46,7 +46,11 @@ export function IntakeForm({ onItineraryGenerated, onSubmitting }: IntakeFormPro
         budget_currency: form.budget_currency ?? 'USD',
       }
       const data = await generateItinerary(payload)
-      onItineraryGenerated(data)
+      onItineraryGenerated(
+        data,
+        typeof payload.budget === 'number' ? payload.budget : undefined,
+        payload.budget_currency,
+      )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       setLoading(false)

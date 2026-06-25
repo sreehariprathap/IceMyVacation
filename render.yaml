@@ -9,6 +9,8 @@ services:
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: DEEPSEEK_API_KEY
         sync: false
       - key: GOOGLE_MAPS_API_KEY

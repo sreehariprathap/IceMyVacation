@@ -1,0 +1,359 @@
+ .superpowers/sdd/task-5-report.md            |  34 +++++
+ frontend/src/App.tsx                         |  36 ++++-
+ frontend/src/components/IntakeForm.tsx       |   8 +-
+ frontend/src/components/ItineraryDisplay.tsx | 204 +++++++++++++++++++++++++++
+ 4 files changed, 276 insertions(+), 6 deletions(-)
+diff --git a/.superpowers/sdd/task-5-report.md b/.superpowers/sdd/task-5-report.md
+new file mode 100644
+index 0000000..069a60e
+--- /dev/null
++++ b/.superpowers/sdd/task-5-report.md
+@@ -0,0 +1,34 @@
++# Task 5 Report: Itinerary Display & Budget Analysis UI
++
++## Status: DONE
++
++## What was built
++
++### New file: `frontend/src/components/ItineraryDisplay.tsx`
++- Mobile-first layout with sticky header bar (app name + "Start Over" ghost button)
++- Two-panel layout: stacked vertically on mobile, side-by-side (`lg:flex-row`) on large screens
++- **Day-by-day section:**
++  - Horizontal scrollable day selector tabs (primary variant for selected, outline for others)
++  - Full-width "View on Map" button calling `onViewMap()`
++  - Activity cards showing: time badge (secondary variant), title (bold text-lg), description (muted), location with 📍 icon, transport note with 🚌 icon (italic, conditional), estimated cost (formatted with Intl.NumberFormat)
++- **Budget section (Card):**
++  - Four breakdown rows: Accommodation, Food, Activities, Transport
++  - Divider, then total estimated cost (green if under budget, red if over, neutral if no budget)
++  - User's stated budget displayed if provided
++  - Over/under budget delta shown
++  - Amber disclaimer banner: "⚠️ Note: A buffer of ±10–15% should be expected due to local price variations."
++- Currency formatting via `Intl.NumberFormat` with `itinerary.currency`
++
++### Modified: `frontend/src/components/IntakeForm.tsx`
++- Updated `onItineraryGenerated` callback signature to `(data: ItineraryResponse, budget?: number, budgetCurrency?: string) => void`
++- Passes `payload.budget` and `payload.budget_currency` when calling the callback
++
++### Modified: `frontend/src/App.tsx`
++- Added `'map'` to view state type: `'form' | 'loading' | 'result' | 'map'`
++- Added `userBudget: number | null` and `userBudgetCurrency: string` state
++- `handleItineraryGenerated` now accepts and stores budget info
++- Result view now renders `<ItineraryDisplay>` instead of raw JSON
++- Map view shows placeholder with back link (Task 6 will implement it)
++
++## Verification
++- `npx tsc --noEmit` → zero errors
+diff --git a/frontend/src/App.tsx b/frontend/src/App.tsx
+index b5ba78c..93b0c69 100644
+--- a/frontend/src/App.tsx
++++ b/frontend/src/App.tsx
+@@ -1,17 +1,26 @@
+ import { useState } from 'react'
+ import { IntakeForm } from './components/IntakeForm'
+ import { LoadingState } from './components/LoadingState'
++import { ItineraryDisplay } from './components/ItineraryDisplay'
+ import { ItineraryResponse } from './lib/api'
+ import './App.css'
+ 
+ function App() {
+-  const [view, setView] = useState<'form' | 'loading' | 'result'>('form')
++  const [view, setView] = useState<'form' | 'loading' | 'result' | 'map'>('form')
+   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null)
++  const [userBudget, setUserBudget] = useState<number | null>(null)
++  const [userBudgetCurrency, setUserBudgetCurrency] = useState<string>('USD')
+ 
+-  const handleItineraryGenerated = (data: ItineraryResponse) => {
++  const handleItineraryGenerated = (
++    data: ItineraryResponse,
++    budget?: number,
++    budgetCurrency?: string,
++  ) => {
+     setItinerary(data)
++    setUserBudget(budget ?? null)
++    setUserBudgetCurrency(budgetCurrency ?? 'USD')
+     setView('result')
+   }
+ 
+   const handleFormSubmit = () => {
+     setView('loading')
+@@ -25,15 +34,34 @@ function App() {
+           onSubmitting={handleFormSubmit}
+         />
+       )}
+       {view === 'loading' && <LoadingState />}
+       {view === 'result' && itinerary && (
++        <ItineraryDisplay
++          itinerary={itinerary}
++          userBudget={userBudget}
++          userBudgetCurrency={userBudgetCurrency}
++          onViewMap={() => setView('map')}
++          onStartOver={() => {
++            setItinerary(null)
++            setView('form')
++          }}
++        />
++      )}
++      {view === 'map' && (
+         <div className="container mx-auto p-4">
+           <p className="text-center text-muted-foreground">
+-            Itinerary ready! (display component coming in Task 5)
++            Map view coming in Task 6.
+           </p>
+-          <pre className="text-xs overflow-auto">{JSON.stringify(itinerary, null, 2)}</pre>
++          <div className="text-center mt-4">
++            <button
++              className="text-sm underline text-muted-foreground"
++              onClick={() => setView('result')}
++            >
++              Back to itinerary
++            </button>
++          </div>
+         </div>
+       )}
+     </div>
+   )
+ }
+diff --git a/frontend/src/components/IntakeForm.tsx b/frontend/src/components/IntakeForm.tsx
+index e172d51..28c2c72 100644
+--- a/frontend/src/components/IntakeForm.tsx
++++ b/frontend/src/components/IntakeForm.tsx
+@@ -6,11 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+ import { Loader2 } from 'lucide-react'
+ import { generateItinerary, ItineraryRequest, ItineraryResponse } from '@/lib/api'
+ 
+ interface IntakeFormProps {
+-  onItineraryGenerated: (data: ItineraryResponse) => void
++  onItineraryGenerated: (data: ItineraryResponse, budget?: number, budgetCurrency?: string) => void
+   onSubmitting: () => void
+ }
+ 
+ export function IntakeForm({ onItineraryGenerated, onSubmitting }: IntakeFormProps) {
+   const today = new Date().toISOString().split('T')[0]
+@@ -44,11 +44,15 @@ export function IntakeForm({ onItineraryGenerated, onSubmitting }: IntakeFormPro
+         transport_mode: form.transport_mode ?? 'public_transit',
+         budget: form.budget,
+         budget_currency: form.budget_currency ?? 'USD',
+       }
+       const data = await generateItinerary(payload)
+-      onItineraryGenerated(data)
++      onItineraryGenerated(
++        data,
++        typeof payload.budget === 'number' ? payload.budget : undefined,
++        payload.budget_currency,
++      )
+     } catch (err) {
+       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+       setLoading(false)
+     }
+   }
+diff --git a/frontend/src/components/ItineraryDisplay.tsx b/frontend/src/components/ItineraryDisplay.tsx
+new file mode 100644
+index 0000000..f65985a
+--- /dev/null
++++ b/frontend/src/components/ItineraryDisplay.tsx
+@@ -0,0 +1,204 @@
++import { useState } from 'react'
++import { Button } from '@/components/ui/button'
++import { Badge } from '@/components/ui/badge'
++import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
++import { ItineraryResponse } from '@/lib/api'
++
++interface ItineraryDisplayProps {
++  itinerary: ItineraryResponse
++  userBudget?: number | null
++  userBudgetCurrency?: string
++  onViewMap: () => void
++  onStartOver: () => void
++}
++
++function formatCurrency(amount: number, currency: string): string {
++  try {
++    return new Intl.NumberFormat('en-US', {
++      style: 'currency',
++      currency,
++      minimumFractionDigits: 0,
++    }).format(amount)
++  } catch {
++    return `${currency} ${amount.toLocaleString()}`
++  }
++}
++
++export function ItineraryDisplay({
++  itinerary,
++  userBudget,
++  userBudgetCurrency,
++  onViewMap,
++  onStartOver,
++}: ItineraryDisplayProps) {
++  const [selectedDay, setSelectedDay] = useState(0)
++
++  const { days, budget_breakdown, total_estimated_cost, currency } = itinerary
++  const currentDay = days[selectedDay]
++
++  const budgetItems = [
++    { label: 'Accommodation', amount: budget_breakdown.accommodation },
++    { label: 'Food', amount: budget_breakdown.food },
++    { label: 'Activities', amount: budget_breakdown.activities },
++    { label: 'Transport', amount: budget_breakdown.transport },
++  ]
++
++  const isOverBudget =
++    userBudget != null && total_estimated_cost > userBudget
++  const isUnderBudget =
++    userBudget != null && total_estimated_cost <= userBudget
++
++  const totalColorClass =
++    isOverBudget
++      ? 'text-red-600 dark:text-red-400'
++      : isUnderBudget
++      ? 'text-green-600 dark:text-green-400'
++      : 'text-foreground'
++
++  return (
++    <div className="min-h-screen bg-background">
++      {/* Header bar */}
++      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
++        <div className="flex items-center gap-2">
++          <span className="text-xl">✈️</span>
++          <span className="font-bold text-lg">IceMyVacation</span>
++        </div>
++        <Button variant="ghost" size="sm" onClick={onStartOver}>
++          Start Over
++        </Button>
++      </header>
++
++      <div className="container mx-auto px-4 py-6 max-w-5xl">
++        <div className="flex flex-col lg:flex-row gap-6">
++          {/* ── Left / Top: Day-by-day itinerary ── */}
++          <div className="flex-1 min-w-0">
++            <h2 className="text-xl font-semibold mb-4">Your Itinerary</h2>
++
++            {/* Day selector tabs */}
++            <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
++              {days.map((day, idx) => (
++                <Button
++                  key={day.day}
++                  variant={selectedDay === idx ? 'default' : 'outline'}
++                  size="sm"
++                  className="flex-shrink-0"
++                  onClick={() => setSelectedDay(idx)}
++                >
++                  Day {day.day}
++                </Button>
++              ))}
++            </div>
++
++            {/* View on Map button */}
++            <Button className="w-full mb-4" onClick={onViewMap}>
++              🗺️ View on Map
++            </Button>
++
++            {/* Selected day date */}
++            {currentDay && (
++              <p className="text-sm text-muted-foreground mb-3">
++                {new Date(currentDay.date + 'T00:00:00').toLocaleDateString('en-US', {
++                  weekday: 'long',
++                  year: 'numeric',
++                  month: 'long',
++                  day: 'numeric',
++                })}
++              </p>
++            )}
++
++            {/* Activity cards */}
++            <div className="space-y-3">
++              {currentDay?.activities.map((activity, idx) => (
++                <Card key={idx}>
++                  <CardContent className="pt-4 pb-4">
++                    <div className="flex items-start justify-between gap-2 mb-2">
++                      <div className="flex items-center gap-2 flex-wrap">
++                        <Badge variant="secondary">{activity.time}</Badge>
++                        <h3 className="font-bold text-lg leading-tight">{activity.title}</h3>
++                      </div>
++                      <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
++                        {formatCurrency(activity.estimated_cost, currency)}
++                      </span>
++                    </div>
++
++                    <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
++
++                    <p className="text-xs text-muted-foreground">
++                      📍 {activity.location}
++                    </p>
++
++                    {activity.transport_note && (
++                      <p className="text-xs text-muted-foreground italic mt-1">
++                        🚌 {activity.transport_note}
++                      </p>
++                    )}
++                  </CardContent>
++                </Card>
++              ))}
++            </div>
++          </div>
++
++          {/* ── Right / Bottom: Budget breakdown ── */}
++          <div className="lg:w-80 flex-shrink-0">
++            <Card>
++              <CardHeader className="pb-3">
++                <CardTitle className="text-lg">Budget Overview</CardTitle>
++              </CardHeader>
++              <CardContent>
++                <div className="space-y-3">
++                  {budgetItems.map((item) => (
++                    <div key={item.label} className="flex items-center justify-between">
++                      <span className="text-sm text-muted-foreground">{item.label}</span>
++                      <span className="text-sm font-medium">
++                        {formatCurrency(item.amount, currency)}
++                      </span>
++                    </div>
++                  ))}
++                </div>
++
++                <div className="border-t my-4" />
++
++                <div className="flex items-center justify-between mb-1">
++                  <span className="font-semibold">Total Estimated Cost</span>
++                  <span className={`text-lg font-bold ${totalColorClass}`}>
++                    {formatCurrency(total_estimated_cost, currency)}
++                  </span>
++                </div>
++
++                {userBudget != null && userBudgetCurrency && (
++                  <div className="flex items-center justify-between text-sm mt-2">
++                    <span className="text-muted-foreground">Your Budget</span>
++                    <span className="font-medium">
++                      {formatCurrency(userBudget, userBudgetCurrency)}
++                    </span>
++                  </div>
++                )}
++
++                {isOverBudget && (
++                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
++                    Over budget by{' '}
++                    {formatCurrency(total_estimated_cost - (userBudget ?? 0), currency)}
++                  </p>
++                )}
++                {isUnderBudget && (
++                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
++                    Within budget — saving{' '}
++                    {formatCurrency((userBudget ?? 0) - total_estimated_cost, currency)}
++                  </p>
++                )}
++
++                {/* Disclaimer */}
++                <div className="mt-4 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2">
++                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
++                    ⚠️ Note: A buffer of ±10–15% should be expected due to local price
++                    variations.
++                  </p>
++                </div>
++              </CardContent>
++            </Card>
++          </div>
++        </div>
++      </div>
++    </div>
++  )
++}

@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, animate } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ItineraryResponse } from '@/lib/api'
+import { Compass } from 'lucide-react'
+import { FadeUp, StaggerContainer, StaggerItem } from '@/components/motion'
+import type { ItineraryResponse } from '@/lib/api'
 
 interface ItineraryDisplayProps {
   itinerary: ItineraryResponse
@@ -24,6 +26,25 @@ function formatCurrency(amount: number, currency: string): string {
   }
 }
 
+function AnimatedNumber({ value, currency }: { value: number; currency: string }) {
+  const ref = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const controls = animate(0, value, {
+      duration: 1.2,
+      ease: 'easeOut',
+      onUpdate(v) {
+        node.textContent = formatCurrency(v, currency)
+      },
+    })
+    return () => controls.stop()
+  }, [value, currency])
+
+  return <span ref={ref}>{formatCurrency(0, currency)}</span>
+}
+
 export function ItineraryDisplay({
   itinerary,
   userBudget,
@@ -43,125 +64,160 @@ export function ItineraryDisplay({
     { label: 'Transport', amount: budget_breakdown.transport },
   ]
 
-  const isOverBudget =
-    userBudget != null && total_estimated_cost > userBudget
-  const isUnderBudget =
-    userBudget != null && total_estimated_cost <= userBudget
+  const isOverBudget = userBudget != null && total_estimated_cost > userBudget
+  const isUnderBudget = userBudget != null && total_estimated_cost <= userBudget
 
-  const totalColorClass =
-    isOverBudget
-      ? 'text-red-600 dark:text-red-400'
-      : isUnderBudget
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-foreground'
+  const totalColorClass = isOverBudget
+    ? 'text-red-600'
+    : isUnderBudget
+    ? 'text-green-600'
+    : 'text-[#C9956A]'
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header bar */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">✈️</span>
-          <span className="font-bold text-lg">IceMyVacation</span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onStartOver}>
-          Start Over
-        </Button>
+      {/* Sticky header */}
+      <header className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between">
+        <span className="font-playfair italic text-xl text-foreground">IceMyVacation</span>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onStartOver}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            Start Over
+          </Button>
+        </motion.div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* ── Left / Top: Day-by-day itinerary ── */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-semibold mb-4">Your Itinerary</h2>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        {/* Page title */}
+        <FadeUp className="mb-6">
+          <h2 className="font-playfair italic text-3xl md:text-4xl text-foreground">
+            Your Itinerary
+          </h2>
+        </FadeUp>
 
-            {/* Day selector tabs */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left: itinerary */}
+          <div className="flex-1 min-w-0">
+            {/* Day tabs with shared layout animation */}
             <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
               {days.map((day, idx) => (
-                <Button
+                <button
                   key={day.day}
-                  variant={selectedDay === idx ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-shrink-0"
                   onClick={() => setSelectedDay(idx)}
+                  className="relative flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors"
                 >
-                  Day {day.day}
-                </Button>
+                  {selectedDay === idx && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 rounded-full bg-[#C9956A]"
+                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                    />
+                  )}
+                  <span
+                    className={`relative z-10 ${
+                      selectedDay === idx ? 'text-white' : 'text-muted-foreground'
+                    }`}
+                  >
+                    Day {day.day}
+                  </span>
+                </button>
               ))}
             </div>
 
-            {/* View on Map button */}
-            <Button className="w-full mb-4" onClick={onViewMap}>
-              🗺️ View on Map
-            </Button>
+            {/* View on Map */}
+            <motion.div
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              className="mb-4"
+            >
+              <Button
+                className="w-full bg-[#C9956A] hover:bg-[#B8845A] text-white font-medium rounded-xl h-11 gap-2 border-0"
+                onClick={onViewMap}
+              >
+                <Compass size={16} />
+                View on Map
+              </Button>
+            </motion.div>
 
-            {/* Selected day date */}
+            {/* Date label */}
             {currentDay && (
-              <p className="text-sm text-muted-foreground mb-3">
-                {new Date(currentDay.date + 'T00:00:00').toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </p>
+              <FadeUp key={`date-${selectedDay}`} className="mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {new Date(currentDay.date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </FadeUp>
             )}
 
-            {/* Activity cards */}
-            <div className="space-y-3">
-              {currentDay?.activities.map((activity, idx) => (
-                <Card key={idx}>
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="secondary">{activity.time}</Badge>
-                        <h3 className="font-bold text-lg leading-tight">{activity.title}</h3>
+            {/* Activity cards — exit old, enter new on day change */}
+            <AnimatePresence mode="wait">
+              <StaggerContainer key={`cards-${selectedDay}`} className="space-y-3">
+                {currentDay?.activities.map((activity, idx) => (
+                  <StaggerItem key={idx}>
+                    <motion.div
+                      whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+                      className="bg-card border border-border rounded-xl p-4 cursor-default"
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge className="bg-muted text-muted-foreground border-0 rounded-full text-xs font-normal">
+                            {activity.time}
+                          </Badge>
+                          <h3 className="font-semibold text-base leading-tight">
+                            {activity.title}
+                          </h3>
+                        </div>
+                        <span className="text-sm font-semibold text-[#C9956A] whitespace-nowrap">
+                          {formatCurrency(activity.estimated_cost, currency)}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                        {formatCurrency(activity.estimated_cost, currency)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
-
-                    <p className="text-xs text-muted-foreground">
-                      📍 {activity.location}
-                    </p>
-
-                    {activity.transport_note && (
-                      <p className="text-xs text-muted-foreground italic mt-1">
-                        🚌 {activity.transport_note}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <p className="text-sm text-muted-foreground mb-2">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground">📍 {activity.location}</p>
+                      {activity.transport_note && (
+                        <p className="text-xs text-muted-foreground italic mt-1">
+                          🚌 {activity.transport_note}
+                        </p>
+                      )}
+                    </motion.div>
+                  </StaggerItem>
+                ))}
+              </StaggerContainer>
+            </AnimatePresence>
           </div>
 
-          {/* ── Right / Bottom: Budget breakdown ── */}
+          {/* Right: Budget */}
           <div className="lg:w-80 flex-shrink-0">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Budget Overview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+            <FadeUp delay={0.2}>
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <h3 className="font-playfair italic text-xl mb-4 text-foreground">
+                  Budget Overview
+                </h3>
+                <StaggerContainer className="space-y-3">
                   {budgetItems.map((item) => (
-                    <div key={item.label} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{item.label}</span>
-                      <span className="text-sm font-medium">
-                        {formatCurrency(item.amount, currency)}
-                      </span>
-                    </div>
+                    <StaggerItem key={item.label}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{item.label}</span>
+                        <span className="text-sm font-medium">
+                          <AnimatedNumber value={item.amount} currency={currency} />
+                        </span>
+                      </div>
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
 
-                <div className="border-t my-4" />
+                <div className="border-t border-border my-4" />
 
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold">Total Estimated Cost</span>
+                  <span className="font-semibold text-sm">Total Estimated Cost</span>
                   <span className={`text-lg font-bold ${totalColorClass}`}>
-                    {formatCurrency(total_estimated_cost, currency)}
+                    <AnimatedNumber value={total_estimated_cost} currency={currency} />
                   </span>
                 </div>
 
@@ -175,27 +231,25 @@ export function ItineraryDisplay({
                 )}
 
                 {isOverBudget && (
-                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                  <p className="text-xs text-red-600 mt-2">
                     Over budget by{' '}
                     {formatCurrency(total_estimated_cost - (userBudget ?? 0), currency)}
                   </p>
                 )}
                 {isUnderBudget && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  <p className="text-xs text-green-600 mt-2">
                     Within budget — saving{' '}
                     {formatCurrency((userBudget ?? 0) - total_estimated_cost, currency)}
                   </p>
                 )}
 
-                {/* Disclaimer */}
-                <div className="mt-4 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2">
-                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                    ⚠️ Note: A buffer of ±10–15% should be expected due to local price
-                    variations.
+                <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2">
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    A buffer of ±10–15% should be expected due to local price variations.
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </FadeUp>
           </div>
         </div>
       </div>

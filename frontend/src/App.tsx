@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { IntakeForm } from './components/IntakeForm'
 import { LoadingState } from './components/LoadingState'
 import { ItineraryDisplay } from './components/ItineraryDisplay'
 import { MapView } from './components/MapView'
-import { ItineraryResponse } from './lib/api'
+import { PageTransition } from './components/motion'
+import type { ItineraryResponse } from './lib/api'
 import './App.css'
 
 function App() {
@@ -28,32 +30,44 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {view === 'form' && (
-        <IntakeForm
-          onItineraryGenerated={handleItineraryGenerated}
-          onSubmitting={handleFormSubmit}
-        />
-      )}
-      {view === 'loading' && <LoadingState />}
-      {view === 'result' && itinerary && (
-        <ItineraryDisplay
-          itinerary={itinerary}
-          userBudget={userBudget}
-          userBudgetCurrency={userBudgetCurrency}
-          onViewMap={() => setView('map')}
-          onStartOver={() => {
-            setItinerary(null)
-            setView('form')
-          }}
-        />
-      )}
-      {view === 'map' && itinerary && (
-        <MapView
-          itinerary={itinerary}
-          onBack={() => setView('result')}
-        />
-      )}
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <AnimatePresence mode="wait">
+        {view === 'form' && (
+          <PageTransition key="form">
+            <IntakeForm
+              onItineraryGenerated={handleItineraryGenerated}
+              onSubmitting={handleFormSubmit}
+            />
+          </PageTransition>
+        )}
+        {view === 'loading' && (
+          <PageTransition key="loading">
+            <LoadingState />
+          </PageTransition>
+        )}
+        {view === 'result' && itinerary && (
+          <PageTransition key="result">
+            <ItineraryDisplay
+              itinerary={itinerary}
+              userBudget={userBudget}
+              userBudgetCurrency={userBudgetCurrency}
+              onViewMap={() => setView('map')}
+              onStartOver={() => {
+                setItinerary(null)
+                setView('form')
+              }}
+            />
+          </PageTransition>
+        )}
+        {view === 'map' && itinerary && (
+          <PageTransition key="map">
+            <MapView
+              itinerary={itinerary}
+              onBack={() => setView('result')}
+            />
+          </PageTransition>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

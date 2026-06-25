@@ -4,26 +4,27 @@
 
 @layer base {
   :root {
-    --background: 40 30% 97%;
-    --foreground: 25 15% 10%;
-    --card: 40 40% 99%;
-    --card-foreground: 25 15% 10%;
-    --popover: 40 40% 99%;
-    --popover-foreground: 25 15% 10%;
-    --primary: 24 44% 60%;
-    --primary-foreground: 40 40% 99%;
-    --secondary: 35 30% 88%;
-    --secondary-foreground: 25 20% 25%;
-    --muted: 35 25% 92%;
-    --muted-foreground: 25 15% 45%;
-    --accent: 35 30% 88%;
-    --accent-foreground: 25 20% 25%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 40 40% 99%;
-    --border: 35 25% 87%;
-    --input: 35 25% 87%;
-    --ring: 24 44% 60%;
-    --radius: 0.75rem;
+    /* Tropical Beach palette — always light */
+    --background: 196 60% 97%;       /* very light sky blue */
+    --foreground: 210 40% 15%;       /* deep ocean navy */
+    --card: 0 0% 100%;               /* pure white cards */
+    --card-foreground: 210 40% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 15%;
+    --primary: 14 90% 60%;           /* coral/sunset orange */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 186 72% 88%;        /* soft sky/aqua */
+    --secondary-foreground: 196 60% 20%;
+    --muted: 196 40% 94%;            /* light sky tint */
+    --muted-foreground: 210 25% 45%;
+    --accent: 43 95% 65%;            /* sandy gold */
+    --accent-foreground: 210 40% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 196 30% 86%;
+    --input: 196 30% 86%;
+    --ring: 14 90% 60%;
+    --radius: 1rem;
   }
 }
 
@@ -31,7 +32,10 @@
   * {
     @apply border-border;
   }
+  html {
+    color-scheme: light only;
+  }
   body {
-    @apply bg-background text-foreground font-inter antialiased;
+    @apply bg-background text-foreground font-nunito antialiased;
   }
 }

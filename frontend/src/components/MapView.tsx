@@ -22,7 +22,7 @@ const DEFAULT_CENTER: [number, number] = [13.7563, 100.5018]
 function createNumberedIcon(num: number) {
   return L.divIcon({
     className: '',
-    html: `<div style="background:#C9956A;color:white;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)">${num}</div>`,
+    html: `<div style="background:#F2633A;color:white;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:2.5px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25);font-family:Nunito,sans-serif">${num}</div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 14],
   })
@@ -80,7 +80,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
             onClick={onBack}
             variant="secondary"
             size="sm"
-            className="shadow-md bg-[#FAF8F4]/90 backdrop-blur-sm border border-[#E5DDD3] text-foreground"
+            className="shadow-md bg-white/90 backdrop-blur-sm border-2 border-border text-foreground font-nunito font-semibold rounded-xl"
           >
             <ArrowLeft size={16} className="mr-2" />
             Back to Itinerary
@@ -90,7 +90,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
 
       {/* Day selector */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] max-w-xs md:max-w-lg">
-        <div className="flex gap-2 overflow-x-auto pb-1 px-3 py-2 scrollbar-hide bg-[#FAF8F4]/90 backdrop-blur-sm rounded-full shadow-md">
+        <div className="flex gap-2 overflow-x-auto pb-1 px-3 py-2 scrollbar-hide bg-white/90 backdrop-blur-sm rounded-full shadow-md border-2 border-border">
           {itinerary.days.map((day, idx) => (
             <button
               key={idx}
@@ -100,7 +100,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
               }}
               className={`flex-shrink-0 px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                 selectedDay === idx
-                  ? 'bg-[#C9956A] text-white'
+                  ? 'bg-primary text-white'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
@@ -124,7 +124,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
         <MapRecenter center={mapCenter} />
 
         {polylinePath.length > 1 && (
-          <Polyline positions={polylinePath} color="#C9956A" weight={3} opacity={0.8} />
+          <Polyline positions={polylinePath} color="#F2633A" weight={3} opacity={0.8} />
         )}
 
         {currentDay?.activities.map((activity, idx) => {
@@ -157,10 +157,10 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
       </MapContainer>
 
       {/* Desktop: right panel */}
-      <div className="hidden md:flex absolute top-0 right-0 h-full w-80 bg-[#FAF8F4]/95 backdrop-blur-md shadow-xl border-l border-[#E5DDD3] flex-col z-[1000]">
-        <div className="p-4 border-b border-[#E5DDD3]">
-          <h2 className="font-playfair italic text-xl text-foreground">
-            Day {currentDay?.day}
+      <div className="hidden md:flex absolute top-0 right-0 h-full w-80 bg-white/95 backdrop-blur-md shadow-xl border-l-2 border-border flex-col z-[1000]">
+        <div className="p-4 border-b-2 border-border">
+          <h2 className="font-fredoka text-xl text-foreground tracking-wide">
+            📅 Day {currentDay?.day}
           </h2>
           <p className="text-sm text-muted-foreground">{currentDay?.date}</p>
         </div>
@@ -171,14 +171,14 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
                 <motion.button
                   whileHover={{ y: -1, boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                   onClick={() => handleActivityClick(activity, idx)}
-                  className={`w-full text-left p-3 rounded-xl border transition-colors hover:bg-muted ${
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-colors hover:bg-muted ${
                     selectedActivity === activity
-                      ? 'bg-muted border-[#C9956A]'
-                      : 'border-[#E5DDD3] bg-card'
+                      ? 'bg-muted border-primary'
+                      : 'border-border bg-card'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <Badge className="flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center p-0 text-xs bg-[#C9956A] text-white border-0">
+                    <Badge className="flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center p-0 text-xs bg-primary text-white border-0">
                       {idx + 1}
                     </Badge>
                     <div className="flex-1 min-w-0">
@@ -191,7 +191,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
                         <MapPin size={10} />
                         <span className="truncate">{activity.location}</span>
                       </div>
-                      <div className="flex items-center gap-1 mt-0.5 text-xs text-[#C9956A]">
+                      <div className="flex items-center gap-1 mt-0.5 text-xs text-primary">
                         <DollarSign size={10} />
                         <span>
                           {activity.estimated_cost} {itinerary.currency}
@@ -220,12 +220,12 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
               onClick={() => handleActivityClick(activity, idx)}
               className={`w-full text-left p-2 rounded-xl border transition-colors hover:bg-muted ${
                 selectedActivity === activity
-                  ? 'bg-muted border-[#C9956A]'
+                  ? 'bg-muted border-primary'
                   : 'border-[#E5DDD3] bg-card'
               }`}
             >
               <div className="flex items-center gap-2">
-                <Badge className="flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center p-0 text-xs bg-[#C9956A] text-white border-0">
+                <Badge className="flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center p-0 text-xs bg-primary text-white border-0">
                   {idx + 1}
                 </Badge>
                 <div className="flex-1 min-w-0">
@@ -235,7 +235,7 @@ export function MapView({ itinerary, onBack }: MapViewProps) {
                       <Clock size={9} />
                       {activity.time}
                     </span>
-                    <span className="flex items-center gap-0.5 text-[#C9956A]">
+                    <span className="flex items-center gap-0.5 text-primary">
                       <DollarSign size={9} />
                       {activity.estimated_cost} {itinerary.currency}
                     </span>

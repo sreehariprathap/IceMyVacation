@@ -8,8 +8,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        playfair: ['"Playfair Display"', 'Georgia', 'serif'],
-        inter: ['Inter', 'system-ui', 'sans-serif'],
+        fredoka: ['"Fredoka One"', 'Nunito', 'sans-serif'],
+        nunito: ['Nunito', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",

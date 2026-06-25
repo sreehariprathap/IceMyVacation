@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { IntakeForm } from './components/IntakeForm'
+import type { TripMeta } from './components/IntakeForm'
 import { LoadingState } from './components/LoadingState'
 import { ItineraryDisplay } from './components/ItineraryDisplay'
 import { MapView } from './components/MapView'
@@ -13,15 +14,18 @@ function App() {
   const [itinerary, setItinerary] = useState<ItineraryResponse | null>(null)
   const [userBudget, setUserBudget] = useState<number | null>(null)
   const [userBudgetCurrency, setUserBudgetCurrency] = useState<string>('USD')
+  const [tripMeta, setTripMeta] = useState<TripMeta | null>(null)
 
   const handleItineraryGenerated = (
     data: ItineraryResponse,
     budget?: number,
     budgetCurrency?: string,
+    meta?: TripMeta,
   ) => {
     setItinerary(data)
     setUserBudget(budget ?? null)
     setUserBudgetCurrency(budgetCurrency ?? 'USD')
+    if (meta) setTripMeta(meta)
     setView('result')
   }
 
@@ -51,6 +55,12 @@ function App() {
               itinerary={itinerary}
               userBudget={userBudget}
               userBudgetCurrency={userBudgetCurrency}
+              travelerName={tripMeta?.name}
+              destination={tripMeta?.destination}
+              startDate={tripMeta?.startDate}
+              endDate={tripMeta?.endDate}
+              numPeople={tripMeta?.numPeople}
+              transportMode={tripMeta?.transportMode}
               onViewMap={() => setView('map')}
               onStartOver={() => {
                 setItinerary(null)

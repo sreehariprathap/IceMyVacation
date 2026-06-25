@@ -9,8 +9,17 @@ import { generateItinerary } from '@/lib/api'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/motion'
 import type { ItineraryRequest, ItineraryResponse } from '@/lib/api'
 
+export interface TripMeta {
+  name: string
+  destination: string
+  startDate: string
+  endDate: string
+  numPeople: number
+  transportMode: string
+}
+
 interface IntakeFormProps {
-  onItineraryGenerated: (data: ItineraryResponse, budget?: number, budgetCurrency?: string) => void
+  onItineraryGenerated: (data: ItineraryResponse, budget?: number, budgetCurrency?: string, meta?: TripMeta) => void
   onSubmitting: () => void
 }
 
@@ -52,6 +61,14 @@ export function IntakeForm({ onItineraryGenerated, onSubmitting }: IntakeFormPro
         data,
         typeof payload.budget === 'number' ? payload.budget : undefined,
         payload.budget_currency,
+        {
+          name: payload.name,
+          destination: payload.destination,
+          startDate: payload.start_date,
+          endDate: payload.end_date,
+          numPeople: payload.num_people,
+          transportMode: payload.transport_mode,
+        },
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')

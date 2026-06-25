@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, animate } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Compass } from 'lucide-react'
+import { Compass, FileDown } from 'lucide-react'
 import { FadeUp, StaggerContainer, StaggerItem } from '@/components/motion'
 import type { ItineraryResponse } from '@/lib/api'
+import { exportItineraryPDF } from '@/lib/exportPDF'
 
 interface ItineraryDisplayProps {
   itinerary: ItineraryResponse
   userBudget?: number | null
   userBudgetCurrency?: string
+  travelerName?: string
+  destination?: string
+  startDate?: string
+  endDate?: string
+  numPeople?: number
+  transportMode?: string
   onViewMap: () => void
   onStartOver: () => void
 }
@@ -66,9 +73,27 @@ export function ItineraryDisplay({
   itinerary,
   userBudget,
   userBudgetCurrency,
+  travelerName,
+  destination,
+  startDate,
+  endDate,
+  numPeople,
+  transportMode,
   onViewMap,
   onStartOver,
 }: ItineraryDisplayProps) {
+  function handleExportPDF() {
+    exportItineraryPDF(itinerary, {
+      name: travelerName ?? 'Traveller',
+      destination: destination ?? 'Your Destination',
+      startDate: startDate ?? '',
+      endDate: endDate ?? '',
+      numPeople: numPeople ?? 1,
+      transportMode: transportMode ?? 'public_transit',
+      userBudget,
+      userBudgetCurrency,
+    })
+  }
   const [selectedDay, setSelectedDay] = useState(0)
   const { days, budget_breakdown, total_estimated_cost, currency } = itinerary
   const currentDay = days[selectedDay]
@@ -131,11 +156,20 @@ export function ItineraryDisplay({
             </div>
 
             {/* View on Map */}
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-5">
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-3">
               <Button className="w-full bg-primary hover:bg-primary/90 text-white font-fredoka tracking-wider rounded-2xl h-12 gap-2 text-base border-0 shadow-sm"
                 onClick={onViewMap}>
                 <Compass size={18} />
                 View on Map
+              </Button>
+            </motion.div>
+
+            {/* Export PDF */}
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="mb-5">
+              <Button variant="outline" className="w-full rounded-2xl h-11 gap-2 text-sm font-nunito font-semibold"
+                onClick={handleExportPDF}>
+                <FileDown size={16} />
+                Export as PDF
               </Button>
             </motion.div>
 

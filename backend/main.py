@@ -22,7 +22,12 @@ settings = Settings()
 
 app = FastAPI(title="IceMyVacation API")
 
-origins = list({settings.frontend_url, "http://localhost:5173"})
+# Support comma-separated list of allowed origins in FRONTEND_URL
+origins = list({
+    origin.strip()
+    for origin in settings.frontend_url.split(",")
+    if origin.strip()
+} | {"http://localhost:5173", "http://localhost:5174"})
 
 app.add_middleware(
     CORSMiddleware,
